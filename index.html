@@ -328,7 +328,7 @@ var synth=window.speechSynthesis,voice=null;
 function pickVoice(){if(!synth)return;var v=synth.getVoices().filter(function(x){return /^en/i.test(x.lang)});voice=v.filter(function(x){return /en[-_]US/i.test(x.lang)})[0]||v[0]||null}
 if(synth){pickVoice();if(synth.onvoiceschanged!==undefined)synth.onvoiceschanged=pickVoice}
 /* Озвучка: сначала готовый файл audio/<ключ>.mp3 (работает и внутри Telegram), если файла нет — голос телефона */
-var AUDIO_BASE='audio/',_au=null,_auBad={};
+var AUDIO_BASE='https://sjvbxmqsjtjndyroqyrg.supabase.co/storage/v1/object/public/audio/',_au=null,_auBad={};
 function ak(s){s=String(s).trim().replace(/\s+/g,' ');var h1=0xdeadbeef,h2=0x41c6ce57,c;for(var i=0;i<s.length;i++){c=s.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677)}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return (4294967296*(2097151&h2)+(h1>>>0)).toString(36)}
 function sayTTS(t){if(!synth)return;try{synth.cancel();var u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=.9;if(voice)u.voice=voice;synth.speak(u)}catch(e){}}
 function say(t){
