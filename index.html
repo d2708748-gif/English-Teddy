@@ -597,7 +597,7 @@ function home(){
   var dx=S.dayXp[today()]||0,ds=(S.secs&&S.secs[today()])||0,NG=(S.norm||10)*60,p=Math.min(1,ds/NG),C=2*Math.PI*26;
   var cur=-1;lv().units.forEach(function(u,i){var s=unitState(i);if(cur<0&&s.unlocked&&!s.done)cur=i});
   var h='<div class="top">'+M('home')+'<h1>'+(ds>=NG?'Норма на сегодня выполнена!':'Давай заниматься!')+'</h1><button class="ib" data-act="theme" aria-label="Тема">'+(document.documentElement.dataset.theme==='dark'?IC.sun:IC.moon)+'</button></div>'+
-  '<div style="display:flex;gap:8px;margin-bottom:14px"><span class="chip">'+IC.fire+' '+(S.last===today()||S.last===yest()?S.streak:0)+' дн.</span><span class="chip">'+IC.bolt+' '+S.xp+' XP</span></div>'+
+  '<div style="display:flex;gap:8px;margin-bottom:14px"><span class="chip"'+((S.lastAt?(Date.now()-S.lastAt<864e5):S.last===today())?'':' style="filter:grayscale(1);opacity:.7"')+'>'+IC.fire+' '+(S.last===today()||S.last===yest()?S.streak:0)+' дн.</span><span class="chip">'+IC.bolt+' '+S.xp+' XP</span></div>'+
   payNoteHTML()+'<button class="btn ghost" data-pay style="margin-bottom:14px;font-size:15.5px">'+CROWN+(subUntil()?'Подписка до '+subUntil():'Купить подписку за Telegram Stars')+'</button>'+'<div class="goal"><div class="ring"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--card)" stroke-width="9"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--acc)" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+(C*(1-p))+'"/></svg><b>'+Math.round(p*100)+'%</b></div><div><p><b>Норма дня: '+(S.norm||10)+' мин</b></p><p class="s">Сегодня: '+fmt(ds)+' · '+dx+' XP</p></div></div>'+
   '<div class="seg" style="margin-bottom:14px">'+LKEYS.map(function(k){return '<button data-lvl2="'+k+'" class="'+(S.level===k?'on':'')+'">'+LEVELS[k].name+' · '+LEVELS[k].code.split('–')[0]+'</button>'}).join('')+'</div><p style="margin:0 0 14px;color:var(--mut);font-size:14px">'+lv().desc+'</p><div class="sect"><h2>Уровень «'+lv().name+'»</h2><span>'+lv().code+'</span></div><div class="path">';
   var curU=-1,curL=-1;
@@ -825,7 +825,7 @@ function finish(){
   var acc=Math.round(L.ok/Math.max(1,L.ok+L.mist)*100),stars=L.mist===0?3:L.mist<=2?2:1;
   var gain=L.xp+((L.mode==='unit'||L.mode==='pack'||L.mode==='final')?20:5);
   var t=today();
-  if(S.last!==t){S.streak=(S.last===yest())?S.streak+1:1;S.last=t}
+  if(S.last!==t){S.streak=(S.last===yest())?S.streak+1:1;S.last=t}S.lastAt=Date.now();
   S.xp+=gain;S.dayXp[t]=(S.dayXp[t]||0)+gain;
   if(L.mode==='pack'){S.lp[L.key]=Math.max(S.lp[L.key]||0,stars)}
   if(L.mode==='final'){var fk='final:'+L.lvl;S.lp[fk]=Math.max(S.lp[fk]||0,stars)}
@@ -997,7 +997,67 @@ function payOpen(){
   var sy=el.scrollTop;el.innerHTML=h+'</div>';el.style.display="block";el.scrollTop=sy;
 }
 /* ---------- админ-панель (только владелец, права проверяет сервер) ---------- */
-function admKeep(){var n=$("aname");if(n)admNameVal=n.value}
+var admUsers=null,admUQ="",admUser=null,admUId=0,admUBusy=false;
+function admKeep(){var n=$("aname");if(n)admNameVal=n.value;var q=$("aq");if(q)admUQ=q.value}
+var LVN={beginner:"Новичок",intermediate:"Средний",expert:"Эксперт"};
+function dtm(x){return x?new Date(x).toLocaleString("ru-RU"):"—"}
+function admUsersLoad(off){
+  admUBusy=true;admErr="";admOpen();
+  api("admin_users",{q:admUQ,offset:off||0}).then(function(x){
+    admUBusy=false;
+    if(x&&x.ok){if(off&&admUsers){x.users=admUsers.users.concat(x.users)}admUsers=x}
+    else admErr=x&&x.error==="db"?"Нет таблицы tg_users: выполните SQL из инструкции":"Нет доступа";
+    admOpen();
+  }).catch(function(){admUBusy=false;admFail()});
+}
+function admUserLoad(id){
+  admUId=id;admUser=null;admUBusy=true;admErr="";admOpen();
+  api("admin_user",{id:id}).then(function(x){admUBusy=false;if(x&&x.ok)admUser=x;else admErr="Не удалось загрузить";admOpen()}).catch(function(){admUBusy=false;admFail()});
+}
+function admUsersHtml(){
+  var h="";
+  if(admUId){
+    h+='<button class="btn ghost" data-auback style="margin-bottom:10px">← К списку</button>';
+    if(admUBusy||!admUser)return h+'<div class="you">Загрузка…</div>';
+    var u=admUser.user||{},p=admUser.prog,ex=admUser.access&&admUser.access.expires_at;
+    var act=ex&&new Date(ex).getTime()>Date.now();
+    h+='<div class="you"><b>'+esc(u.name||"Без имени")+'</b>'+(u.username?' · @'+esc(u.username):'')+'<br>ID '+u.tg_id+
+      '<br><span style="color:var(--mut)">Первый вход: '+dtm(u.first_seen)+'<br>Последний вход: '+dtm(u.last_seen)+'</span></div>';
+    h+='<div class="you"><b>Подписка</b><br>'+(act?'активна до '+dtm(ex):(ex?'закончилась '+dtm(ex):'нет'))+'</div>';
+    h+='<div class="you"><b>Прогресс</b><br>';
+    if(!p)h+='Ещё не занимался(ась)';
+    else{
+      h+='Уровень: '+(LVN[p.level]||"—")+' · норма '+(p.norm||"—")+' мин<br>XP: '+p.xp+' · серия: '+p.streak+' дн. · активных дней: '+p.days+
+        '<br>Последнее занятие: '+(p.last||"—")+'<br>Трудных слов: '+p.hard+'<br>Сохранено: '+dtm(p.updated_at);
+      ["beginner","intermediate","expert"].forEach(function(k){var v=p.per[k];
+        h+='<div style="margin-top:8px"><b>'+LVN[k]+'</b>: тем '+v.topics+' · наборов слов (частей) '+v.packs+' · диалогов (этапов) '+v.talks+' · итоговый тест '+(v.final?v.final+' из 3 ⭐':'не сдавал(а)')+'</div>';
+      });
+    }
+    h+='</div>';
+    h+='<div class="you"><b>История покупок</b>';
+    var rq=admUser.requests||[];
+    if(!rq.length)h+='<br>Покупок нет';
+    rq.forEach(function(r){var stt={pending:"ждёт решения",ok:"одобрено",no:"отклонено"}[r.st]||r.st;
+      h+='<br>#'+r.n+' · '+esc(r.plan)+' · '+r.stars+' звёзд · '+stt+'<br><span style="color:var(--mut)">'+dtm(r.created_at)+'</span>'});
+    (admUser.codes||[]).forEach(function(c){h+='<br>Промокод '+esc(c.code)+' · '+esc(c.plan)+' · '+dtm(c.used_at)});
+    h+='</div>';
+    h+='<div class="you"><b>Друзья</b><br>Засчитано: '+admUser.invited+' · ждут проверки: '+admUser.pending+(admUser.inviter?'<br>Пришёл по ссылке ID '+admUser.inviter:'')+'</div>';
+    return h;
+  }
+  h+='<input id="aq" class="inp" autocomplete="off" placeholder="Поиск: имя, @username или ID" value="'+esc(admUQ)+'"><button class="btn" data-aqgo>Найти</button><div style="height:10px"></div>';
+  if(admUBusy&&!admUsers)return h+'<div class="you">Загрузка…</div>';
+  if(!admUsers)return h;
+  h+='<div class="you">Всего людей: <b>'+admUsers.total+'</b> · с активной подпиской: <b>'+admUsers.active+'</b></div>';
+  if(!admUsers.users.length)h+='<div class="you">Никого не найдено</div>';
+  admUsers.users.forEach(function(u){
+    var ex=u.expires_at&&new Date(u.expires_at).getTime()>Date.now();
+    h+='<button class="you" data-auser="'+u.tg_id+'" style="display:block;width:100%;text-align:left;border:0;font:inherit;color:inherit"><b>'+esc(u.name||"Без имени")+'</b>'+(u.username?' · @'+esc(u.username):'')+
+      '<br><span style="color:var(--mut)">ID '+u.tg_id+' · '+(LVN[u.prog.level]||"уровень не выбран")+' · '+u.prog.xp+' XP · серия '+u.prog.streak+
+      '<br>'+(ex?'подписка до '+dtm(u.expires_at):'без подписки')+(u.buys?' · покупок: '+u.buys+' ('+u.stars+' ⭐)':'')+'<br>был(а): '+dtm(u.last_seen)+'</span></button>';
+  });
+  if(admUsers.users.length<admUsers.count)h+='<button class="btn ghost" data-aqmore>Показать ещё</button>';
+  return h;
+}
 function admLoad(msg){
   admErr=msg||"";admBusy=true;admOpen();
   api("admin_list").then(function(x){admBusy=false;if(x&&x.ok)admData=x;else admErr="Нет доступа";admOpen()}).catch(function(){admBusy=false;admErr="Нет связи с сервером";admOpen()});
@@ -1006,9 +1066,10 @@ function admOpen(){
   admKeep();
   var el=overlay("adm");
   var h='<div><div class="top"><h1>Админ-панель</h1><button class="ib" data-admclose aria-label="Закрыть">'+IC.x+'</button></div>'+
-   '<div class="seg" style="margin-bottom:12px"><button data-admtab="req" class="'+(admTab==="req"?"on":"")+'">Заявки</button><button data-admtab="codes" class="'+(admTab==="codes"?"on":"")+'">Промокоды</button></div>';
+   '<div class="seg" style="margin-bottom:12px"><button data-admtab="req" class="'+(admTab==="req"?"on":"")+'">Заявки</button><button data-admtab="codes" class="'+(admTab==="codes"?"on":"")+'">Промокоды</button><button data-admtab="users" class="'+(admTab==="users"?"on":"")+'">Люди</button></div>';
   if(admErr)h+='<div class="err">'+esc(admErr)+'</div>';
-  if(admBusy&&!admData)h+='<div class="you">Загрузка…</div>';
+  if(admTab==="users")h+=admUsersHtml();
+  else if(admBusy&&!admData)h+='<div class="you">Загрузка…</div>';
   else if(admData){
     if(admTab==="req"){
       var rs=admData.requests||[];
@@ -1071,10 +1132,14 @@ document.addEventListener("click",function(e){
     }).catch(function(){payBusy=false;payCodeErr="Нет связи с сервером";payOpen()});
     return}
   /* админ */
-  if(d.adm!==undefined){admTab="req";admData=null;admLoad();return}
+  if(d.adm!==undefined){admTab="req";admData=null;admUsers=null;admUser=null;admUId=0;admLoad();return}
   if(d.admclose!==undefined){$("pay").style.display="none";main();return}
-  if(d.admtab!==undefined){admKeep();admTab=d.admtab;admOpen();return}
-  if(d.admref!==undefined){admLoad();return}
+  if(d.admtab!==undefined){admKeep();admTab=d.admtab;if(admTab==="users"&&!admUsers)admUsersLoad(0);else admOpen();return}
+  if(d.aqgo!==undefined){admKeep();admUId=0;admUser=null;admUsersLoad(0);return}
+  if(d.aqmore!==undefined){admUsersLoad(admUsers?admUsers.users.length:0);return}
+  if(d.auser!==undefined){admUserLoad(+d.auser);return}
+  if(d.auback!==undefined){admUId=0;admUser=null;admOpen();return}
+  if(d.admref!==undefined){if(admTab==="users"){if(admUId)admUserLoad(admUId);else admUsersLoad(0)}else admLoad();return}
   if(d.aplan!==undefined){admKeep();aPlan=+d.aplan;admOpen();return}
   if(d.agen!==undefined){
     admKeep();
