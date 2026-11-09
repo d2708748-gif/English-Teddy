@@ -665,9 +665,13 @@ function buildLesson(u,i,j){
   else{s.push(mkChoose(ws[0]),mkListen(ws[1]),mkGr(g[0]),mkBuild(ws[2]),mkType(ws[3]),mkGr(g[1]),mkChoose(ws[4],true),mkListen(ws[5]),mkGr(g[2]),mkBuild(ws[0]),mkGr(g[3]),mkType(ws[1]))}
   return s;
 }
+function knownPool(l,i){var out=[],seen={};function add(w){if(!seen[w[0]]){seen[w[0]]=1;out.push(w)}}
+  LEVELS[l].units[i].words.forEach(add);
+  learnedList().forEach(function(x){if(x.lv===l)add([x.en,x.ru,x.ex,x.exr])});
+  return out.length>=6?out:undefined}
 function startLesson(i,j){
   var u=lv().units[i];j=j||0;
-  L={lvl:S.level};
+  L={lvl:S.level,pool:knownPool(S.level,i)};
   var st=buildLesson(u,i,j);
   L={mode:'unit',kind:lessonList(i)[j],lvl:S.level,ui:i,lj:j,unit:u,steps:st,i:0,mist:0,total:st.length,ok:0,xp:0,done:0,retried:{},new:0};
   enterLesson();
@@ -677,7 +681,7 @@ function startPractice(){
   var lvls={};ws.forEach(function(w){lvls[w.lv]=1});
   var w2=ws.map(function(w){return [w.en,w.ru,w.ex,w.exr,w.lv]});
   w2.forEach(function(w,i){
-    L={lvl:w[4]};
+    L={lvl:w[4],pool:w2.length>=6?w2:undefined};
     var r=i%3;steps.push(r===0?mkChoose(w):r===1?mkListen(w):mkType(w));
   });
   L={mode:'practice',lvl:S.level,steps:steps,i:0,mist:0,total:steps.length,ok:0,xp:0,done:0,retried:{}};
