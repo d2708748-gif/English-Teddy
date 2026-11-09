@@ -452,13 +452,44 @@ function mergeP(a,b,top){
 }
 function hasAccess(){return IS_ADMIN||!!(ACC&&ACC.expires_at&&new Date(ACC.expires_at).getTime()>Date.now())}
 function subUntil(){return ACC&&ACC.expires_at&&new Date(ACC.expires_at).getTime()>Date.now()?new Date(ACC.expires_at).toLocaleDateString('ru-RU'):''}
+/* Обязательная подписка на канал */
+var CHAN_URL='https://t.me/BearEnglTop';
+function chOpen(){if(TGW&&TGW.openTelegramLink)TGW.openTelegramLink(CHAN_URL);else window.open(CHAN_URL,'_blank')}
+function chCheck(){
+  var m=document.getElementById('chmsg'),bt=document.getElementById('chchk');
+  if(bt){bt.disabled=true;bt.textContent='Проверяю…'}
+  var done=function(){
+    sync(function(){
+      var g=document.getElementById('chgate');
+      if(g){if(m)m.textContent='Подписку пока не вижу. Подпишись на канал и нажми снова.';
+        var b2=document.getElementById('chchk');if(b2){b2.disabled=false;b2.textContent='Я подписался ✅'}}
+    });
+  };
+  api('checksub').then(done).catch(done);
+}
+function gate(ok){
+  var g=document.getElementById('chgate');
+  if(ok!==false){if(g)g.parentNode.removeChild(g);return}
+  if(g)return;
+  g=document.createElement('div');g.id='chgate';
+  g.style.cssText='position:fixed;left:0;top:0;right:0;bottom:0;z-index:99999;background:rgba(10,12,24,.92);display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit';
+  g.innerHTML='<div style="background:#fffaf0;color:#3a2a1a;border-radius:22px;padding:26px 22px;max-width:360px;width:100%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.4)">'
+   +'<div style="font-size:54px;line-height:1">🐻</div>'
+   +'<div style="font-size:20px;font-weight:800;margin:10px 0 6px">Подпишись на канал Тедди</div>'
+   +'<div style="font-size:15px;line-height:1.4;opacity:.85;margin-bottom:16px">Чтобы пользоваться курсом, нужно быть подписанным на наш канал: там новости, советы и бонусы.</div>'
+   +'<button onclick="chOpen()" style="width:100%;padding:14px;border:0;border-radius:14px;background:#2aa3ef;color:#fff;font-size:16px;font-weight:700;margin-bottom:10px">📢 Подписаться на канал</button>'
+   +'<button id="chchk" onclick="chCheck()" style="width:100%;padding:14px;border:0;border-radius:14px;background:#ffb703;color:#3a2a1a;font-size:16px;font-weight:700">Я подписался ✅</button>'
+   +'<div id="chmsg" style="font-size:13px;margin-top:12px;min-height:18px;color:#b3261e"></div></div>';
+  document.body.appendChild(g);
+}
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&document.getElementById('chgate'))sync()});
 /* Забирает с сервера доступ, заявку и (один раз за запуск) прогресс. cb(changed) */
 function sync(cb){
   if(!INIT){if(cb)cb(false);return}
   api('me',{progress:!_pulled}).then(function(r){
     var changed=false;
     if(r&&r.ok){
-      ACC=r.access||{status:'none'};
+      gate(r.chan);ACC=r.access||{status:'none'};
       try{localStorage.setItem('ec_acc',JSON.stringify(ACC))}catch(e){}
       var pr=REQ;REQ=r.req||null;
       if(!_pulled){
