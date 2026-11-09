@@ -794,17 +794,18 @@ function finish(){
   S.xp+=gain;S.dayXp[t]=(S.dayXp[t]||0)+gain;
   if(L.mode==='pack'){S.lp[L.key]=Math.max(S.lp[L.key]||0,stars)}
   if(L.mode==='final'){var fk='final:'+L.lvl;S.lp[fk]=Math.max(S.lp[fk]||0,stars)}
-  var secDone=false;
-  if(L.mode==='unit'){var wasDone=!!S.done[L.lvl+':'+L.ui];var lk=L.lvl+':'+L.ui+':'+L.lj;if(!S.lp[lk]||S.lp[lk]<stars)S.lp[lk]=stars;var all=lessonList(L.ui,L.lvl).every(function(k,j){return ld(L.lvl,L.ui,j)});if(all){S.done[L.lvl+':'+L.ui]={stars:3};if(!wasDone){var sa=SECTIONS[L.lvl]||[],sk=-1,sx;for(sx=0;sx<sa.length;sx++)if(sa[sx][0]<=L.ui)sk=sx;if(sk>=0){var sf=sa[sk][0],st2=sk+1<sa.length?sa[sk+1][0]:LEVELS[L.lvl].units.length;secDone=true;for(sx=sf;sx<st2;sx++)if(!S.done[L.lvl+':'+sx])secDone=false}}}}
+  var secDone=false,topicDone=false;
+  if(L.mode==='unit'){var wasDone=!!S.done[L.lvl+':'+L.ui];var lk=L.lvl+':'+L.ui+':'+L.lj;if(!S.lp[lk]||S.lp[lk]<stars)S.lp[lk]=stars;var all=lessonList(L.ui,L.lvl).every(function(k,j){return ld(L.lvl,L.ui,j)});if(all){S.done[L.lvl+':'+L.ui]={stars:3};if(!wasDone){topicDone=true;var sa=SECTIONS[L.lvl]||[],sk=-1,sx;for(sx=0;sx<sa.length;sx++)if(sa[sx][0]<=L.ui)sk=sx;if(sk>=0){var sf=sa[sk][0],st2=sk+1<sa.length?sa[sk+1][0]:LEVELS[L.lvl].units.length;secDone=true;for(sx=sf;sx<st2;sx++)if(!S.done[L.lvl+':'+sx])secDone=false}}}}
   save();
   setTabs(false);$('fb').innerHTML='';$('fb').className='';
   $('app').className='';
   var nw=L.mode==='unit'&&L.kind==='words'?L.unit.words.length:(L.mode==='pack'&&!L.review?8:0);
-  $('app').innerHTML='<div class="res">'+(secDone?'<img src="win'+(1+Math.floor(Math.random()*2))+'.gif" alt="" style="width:210px;max-width:70%;height:auto">':M(stars===1?'happy':'cheer'))+'<h1>'+(secDone?'Раздел пройден!':L.mode==='unit'?'Урок пройден!':L.mode==='final'?'Итоговый тест пройден!':'Практика завершена!')+'</h1><p>'+(stars===3?'Без единой ошибки — так держать!':stars===2?'Хороший результат!':'Попробуй ещё раз, чтобы получить больше звёзд.')+'</p><div class="bigst">'+star(stars>0)+star(stars>1)+star(stars>2)+'</div>'+
+  $('app').innerHTML='<div class="res">'+(secDone?'<img src="win'+(1+Math.floor(Math.random()*2))+'.gif" alt="" style="width:210px;max-width:70%;height:auto">':M(stars===1?'happy':'cheer'))+'<h1>'+(secDone?'Раздел пройден!':topicDone?'Тема пройдена!':L.mode==='unit'?'Урок пройден!':L.mode==='final'?'Итоговый тест пройден!':'Практика завершена!')+'</h1><p>'+(stars===3?'Без единой ошибки — так держать!':stars===2?'Хороший результат!':'Попробуй ещё раз, чтобы получить больше звёзд.')+'</p><div class="bigst">'+star(stars>0)+star(stars>1)+star(stars>2)+'</div>'+
    '<div class="stat"><div><b>+'+gain+'</b><span>XP</span></div><div><b>'+acc+'%</b><span>точность</span></div><div><b>'+(nw||L.ok)+'</b><span>'+(nw?'новых слов':'верных')+'</span></div></div><button class="btn" data-act="home">Продолжить</button></div>';
-  sfx(stars>1?'win':'done');if(stars>1)confetti();
+  sfx(stars>1?'win':'done');if(stars>1)confetti();if(secDone)rain('⭐');else if(topicDone)rain('❤️');
   L=null;
 }
+function rain(e){for(var i=0;i<28;i++){var x=document.createElement('i');x.className='cf';x.textContent=e;x.style.cssText='left:'+Math.random()*95+'vw;width:auto;height:auto;background:none;font-style:normal;font-size:'+(20+Math.random()*18)+'px;animation-delay:'+Math.random()*1+'s;animation-duration:'+(2+Math.random()*1.8)+'s';document.body.appendChild(x);setTimeout(function(y){y.remove()},5200,x)}}
 function confetti(){var c=['#ff9420','#1fa463','#4b7bff','#ff5f8a','#ffd23f'];for(var i=0;i<40;i++){var e=document.createElement('i');e.className='cf';e.style.left=Math.random()*100+'vw';e.style.background=c[i%5];e.style.animationDelay=Math.random()*.7+'s';e.style.animationDuration=(1.8+Math.random()*1.6)+'s';document.body.appendChild(e);setTimeout(function(x){x.remove()},4500,e)}}
 
 /* ============================================================
