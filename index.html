@@ -452,6 +452,41 @@ function mergeP(a,b,top){
 }
 function hasAccess(){return IS_ADMIN||!!(ACC&&ACC.expires_at&&new Date(ACC.expires_at).getTime()>Date.now())}
 function subUntil(){return ACC&&ACC.expires_at&&new Date(ACC.expires_at).getTime()>Date.now()?new Date(ACC.expires_at).toLocaleDateString('ru-RU'):''}
+/* ИИ-помощь */
+function aiCtx(){
+  var c=JSON.stringify(cur,function(k,v){return k==='u'?undefined:v});
+  if(cur&&cur.t==='theory'&&cur.u&&cur.u.theory)c='{"t":"theory","title":'+JSON.stringify(String(cur.u.theory.h||''))+'}';
+  return String(c||'').slice(0,1500);
+}
+function aiLim(x){
+  var el=$('ailim');if(!el||!x)return;
+  el.textContent='Осталось сегодня: '+x.left+' из '+x.limit+(x.limit<=3?'. С подпиской — 15 в день.':'');
+}
+function aiOpen(){
+  var el=$('aihelp');
+  if(!el){el=document.createElement('div');el.id='aihelp';el.className='pay';document.body.appendChild(el)}
+  var h='<div><div class="top"><h1>💡 Помощь Тедди</h1><button class="ib" data-aiclose aria-label="Закрыть">'+IC.x+'</button></div>';
+  if(!INIT){el.innerHTML=h+'<div class="warn">Помощь работает внутри Telegram. Откройте курс через нашего бота.</div></div>';el.style.display='block';return}
+  h+='<div class="you" id="ailim">Загрузка…</div>'+
+    '<textarea id="aiq" class="inp" rows="2" maxlength="300" placeholder="Напиши вопрос или оставь пустым: я объясню это задание" style="font-size:16px;resize:none"></textarea>'+
+    '<button class="btn" id="aibtn" data-aiask style="margin-top:8px">Спросить Тедди</button>'+
+    '<div id="aiout" class="you" style="display:none;white-space:pre-wrap;line-height:1.5"></div></div>';
+  el.innerHTML=h;el.style.display='block';
+  api('ai_left').then(aiLim).catch(function(){var l=$('ailim');if(l)l.textContent=''});
+}
+function aiAsk(){
+  var b=$('aibtn'),o=$('aiout'),q=$('aiq');if(!b||b.disabled)return;
+  b.disabled=true;b.textContent='Тедди думает…';o.style.display='none';
+  var end=function(){b.disabled=false;b.textContent='Спросить Тедди'};
+  api('ai_help',{ctx:aiCtx(),q:q?q.value:'',level:S.level}).then(function(r){
+    end();o.style.display='block';
+    if(r&&r.ok){o.textContent=r.text;aiLim(r)}
+    else if(r&&r.error==='limit'){o.textContent='На сегодня помощь закончилась. Завтра будет снова. С подпиской доступно 15 подсказок в день.';aiLim({left:0,limit:r.limit})}
+    else if(r&&r.error==='nochannel'){o.textContent='Подпишись на наш канал, и помощь заработает.'}
+    else if(r&&r.error==='noai'){o.textContent='Помощь пока не настроена.'}
+    else o.textContent='Тедди сейчас не отвечает. Попробуй ещё раз чуть позже: эта попытка не потрачена.';
+  }).catch(function(){end();o.style.display='block';o.textContent='Нет связи. Попробуй ещё раз.'});
+}
 /* Обязательная подписка на канал */
 var CHAN_URL='https://t.me/BearEnglTop';
 function chOpen(){if(TGW&&TGW.openTelegramLink)TGW.openTelegramLink(CHAN_URL);else window.open(CHAN_URL,'_blank')}
@@ -722,7 +757,7 @@ function startPractice(){
 var _pool=pool;
 pool=function(){return L&&L.pool?L.pool:_pool()};
 function enterLesson(){setTabs(false);$('app').className='lesson';renderStep()}
-function bar(){return '<div class="lbar"><button class="x" data-act="quit" aria-label="Выйти">'+IC.x+'</button><div class="prog"><i style="width:'+(L.done/L.total*100)+'%"></i></div></div>'}
+function bar(){return '<div class="lbar"><button class="x" data-act="quit" aria-label="Выйти">'+IC.x+'</button><div class="prog"><i style="width:'+(L.done/L.total*100)+'%"></i></div><button class="x" data-aihelp aria-label="Помощь" style="font-size:20px">💡</button></div>'}
 function hl(sent,word){var re=new RegExp('('+word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','i');return esc(sent).replace(re,'<mark>$1</mark>')}
 var cur=null,locked=false,sel=null,built=[],mst={};
 function renderStep(){
@@ -1098,6 +1133,9 @@ function admOpen(){
 function admFail(){admErr="Нет связи с сервером";admOpen()}
 document.addEventListener("click",function(e){
   var t=e.target.closest("button");if(!t)return;var d=t.dataset;
+  if(d.aihelp!==undefined){aiOpen();return}
+  if(d.aiclose!==undefined){var ah=$("aihelp");if(ah)ah.style.display="none";return}
+  if(d.aiask!==undefined){aiAsk();return}
   if(d.pay!==undefined){payErr="";payCodeErr="";payOpen();sync(function(ch){if(ch)refreshPay()});return}
   if(d.pnote!==undefined){if(S.pay)S.pay.note=null;save();refreshPay();return}
   if(d.payclose!==undefined){payStep=0;$("pay").style.display="none";main();return}
