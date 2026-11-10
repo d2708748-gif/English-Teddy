@@ -459,7 +459,7 @@ function aiCtx(){
   return String(c||'').slice(0,1500);
 }
 function aiLim(x){
-  var el=$('ailim');if(!el||!x)return;
+  var el=$('ailim');if(!el||!x)return;if(x.left===undefined){el.textContent='Счётчик временно недоступен';return}
   el.textContent='Осталось сегодня: '+x.left+' из '+x.limit+(x.limit<=3?'. С подпиской — 15 в день.':'');
 }
 function aiOpen(){
