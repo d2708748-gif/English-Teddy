@@ -484,7 +484,7 @@ function aiAsk(){
     else if(r&&r.error==='limit'){o.textContent='На сегодня помощь закончилась. Завтра будет снова. С подпиской доступно 15 подсказок в день.';aiLim({left:0,limit:r.limit})}
     else if(r&&r.error==='nochannel'){o.textContent='Подпишись на наш канал, и помощь заработает.'}
     else if(r&&r.error==='noai'){o.textContent='Помощь пока не настроена.'}
-    else o.textContent='Тедди сейчас не отвечает. Попробуй ещё раз чуть позже: эта попытка не потрачена.';
+    else o.textContent='Тедди сейчас не отвечает. Попробуй ещё раз чуть позже: эта попытка не потрачена.'+(r&&r.detail?'\n\n[для владельца] '+r.detail:'');
   }).catch(function(){end();o.style.display='block';o.textContent='Нет связи. Попробуй ещё раз.'});
 }
 /* Обязательная подписка на канал */
