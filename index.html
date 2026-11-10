@@ -480,7 +480,7 @@ function aiAsk(){
   var end=function(){b.disabled=false;b.textContent='Спросить Тедди'};
   api('ai_help',{ctx:aiCtx(),q:q?q.value:'',level:S.level}).then(function(r){
     end();o.style.display='block';
-    if(r&&r.ok){o.textContent=r.text;aiLim(r)}
+    if(r&&r.ok){o.textContent=String(r.text).replace(/\*+/g,'').replace(/^#+\s*/gm,'');aiLim(r)}
     else if(r&&r.error==='limit'){o.textContent='На сегодня помощь закончилась. Завтра будет снова. С подпиской доступно 15 подсказок в день.';aiLim({left:0,limit:r.limit})}
     else if(r&&r.error==='nochannel'){o.textContent='Подпишись на наш канал, и помощь заработает.'}
     else if(r&&r.error==='noai'){o.textContent='Помощь пока не настроена.'}
