@@ -1059,6 +1059,15 @@ function admUserLoad(id){
   admUId=id;admUser=null;admUBusy=true;admErr="";admOpen();
   api("admin_user",{id:id}).then(function(x){admUBusy=false;if(x&&x.ok)admUser=x;else admErr="Не удалось загрузить";admOpen()}).catch(function(){admUBusy=false;admFail()});
 }
+var admStats="";
+function admStatsLoad(){
+  admUBusy=true;admErr="";admOpen();
+  api("admin_stats").then(function(x){admUBusy=false;if(x&&x.ok)admStats=x.text;else admErr="Не удалось загрузить статистику";admOpen()}).catch(function(){admUBusy=false;admFail()});
+}
+function admStatsHtml(){
+  if(admUBusy&&!admStats)return '<div class="you">Считаю…</div>';
+  return '<div class="you" style="white-space:pre-wrap;line-height:1.6">'+esc(admStats||"Нажми «Обновить»")+'</div>';
+}
 function admUsersHtml(){
   var h="";
   if(admUId){
@@ -1111,9 +1120,9 @@ function admOpen(){
   admKeep();
   var el=overlay("adm");
   var h='<div><div class="top"><h1>Админ-панель</h1><button class="ib" data-admclose aria-label="Закрыть">'+IC.x+'</button></div>'+
-   '<div class="seg" style="margin-bottom:12px"><button data-admtab="req" class="'+(admTab==="req"?"on":"")+'">Заявки</button><button data-admtab="codes" class="'+(admTab==="codes"?"on":"")+'">Промокоды</button><button data-admtab="users" class="'+(admTab==="users"?"on":"")+'">Люди</button></div>';
+   '<div class="seg" style="margin-bottom:12px"><button data-admtab="req" class="'+(admTab==="req"?"on":"")+'">Заявки</button><button data-admtab="codes" class="'+(admTab==="codes"?"on":"")+'">Промокоды</button><button data-admtab="users" class="'+(admTab==="users"?"on":"")+'">Люди</button><button data-admtab="stats" class="'+(admTab==="stats"?"on":"")+'">Статс</button></div>';
   if(admErr)h+='<div class="err">'+esc(admErr)+'</div>';
-  if(admTab==="users")h+=admUsersHtml();
+  if(admTab==="stats")h+=admStatsHtml();else if(admTab==="users")h+=admUsersHtml();
   else if(admBusy&&!admData)h+='<div class="you">Загрузка…</div>';
   else if(admData){
     if(admTab==="req"){
@@ -1182,12 +1191,12 @@ document.addEventListener("click",function(e){
   /* админ */
   if(d.adm!==undefined){admTab="req";admData=null;admUsers=null;admUser=null;admUId=0;admLoad();return}
   if(d.admclose!==undefined){$("pay").style.display="none";main();return}
-  if(d.admtab!==undefined){admKeep();admTab=d.admtab;if(admTab==="users"&&!admUsers)admUsersLoad(0);else admOpen();return}
+  if(d.admtab!==undefined){admKeep();admTab=d.admtab;if(admTab==="stats"){admStatsLoad();return}if(admTab==="users"&&!admUsers)admUsersLoad(0);else admOpen();return}
   if(d.aqgo!==undefined){admKeep();admUId=0;admUser=null;admUsersLoad(0);return}
   if(d.aqmore!==undefined){admUsersLoad(admUsers?admUsers.users.length:0);return}
   if(d.auser!==undefined){admUserLoad(+d.auser);return}
   if(d.auback!==undefined){admUId=0;admUser=null;admOpen();return}
-  if(d.admref!==undefined){if(admTab==="users"){if(admUId)admUserLoad(admUId);else admUsersLoad(0)}else admLoad();return}
+  if(d.admref!==undefined){if(admTab==="stats"){admStatsLoad()}else if(admTab==="users"){if(admUId)admUserLoad(admUId);else admUsersLoad(0)}else admLoad();return}
   if(d.aplan!==undefined){admKeep();aPlan=+d.aplan;admOpen();return}
   if(d.agen!==undefined){
     admKeep();
